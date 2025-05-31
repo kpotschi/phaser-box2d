@@ -1,7 +1,7 @@
 /**
  * @license
  * Phaser Box2D v1.1.0
- * Saturday, 31 May 2025 at 11:02
+ * Saturday, 31 May 2025 at 13:16
  * 
  * This library includes code that is ported from the original C version. The original C code is Copyright 2023 Erin Catto
  * and was released under the MIT license. The JavaScript port of the C code along with all additional code is
@@ -15597,11 +15597,7 @@ function SpriteToBox(worldId, sprite, data) {
     size: pxmVec2(sprite.width * scaleX / 2, sprite.height * scaleY / 2)
   };
   const body = CreateBoxPolygon({ ...props, ...data });
-  b2Body_SetTransform(
-    body.bodyId,
-    pxmVec2(sprite.x, -sprite.y),
-    RotFromRad(sprite.rotation)
-  );
+  b2Body_SetTransform(body.bodyId, pxmVec2(sprite.x, -sprite.y), RotFromRad(sprite.rotation));
   return body;
 }
 function SpriteToCircle(worldId, sprite, data) {
@@ -15613,11 +15609,7 @@ function SpriteToCircle(worldId, sprite, data) {
     size: pxmVec2(sprite.width * scaleX / 2, sprite.height * scaleY / 2)
   };
   const body = CreateCircle({ ...props, ...data });
-  b2Body_SetTransform(
-    body.bodyId,
-    pxmVec2(sprite.x, -sprite.y),
-    RotFromRad(sprite.rotation)
-  );
+  b2Body_SetTransform(body.bodyId, pxmVec2(sprite.x, -sprite.y), RotFromRad(sprite.rotation));
   return body;
 }
 function CreateWorld(data) {
@@ -15667,7 +15659,18 @@ function CreateChain(data) {
   var position = b2Add(data.firstLinkPosition, new b2Vec2(data.linkLength, 0));
   const listLinks = [];
   for (let i = 0; i < data.chainLinks; i++) {
-    const link = CreateCapsule({ worldId: data.worldId, type, position, center1: new b2Vec2(-data.linkLength / 2 + data.radius, 0), center2: new b2Vec2(data.linkLength / 2 - data.radius, 0), radius, density, friction, groupIndex: -1, color });
+    const link = CreateCapsule({
+      worldId: data.worldId,
+      type,
+      position,
+      center1: new b2Vec2(-data.linkLength / 2 + data.radius, 0),
+      center2: new b2Vec2(data.linkLength / 2 - data.radius, 0),
+      radius,
+      density,
+      friction,
+      groupIndex: -1,
+      color
+    });
     listLinks.push(link);
     if (i == 0) {
       if (data.fixEnds) {
@@ -15905,7 +15908,12 @@ function CreatePolygonFromEarcut(data) {
     const part = [];
     for (let j = 0; j < 3; j++) {
       const index = data.indices[0][i + j] * 2;
-      part.push(new b2Vec2((data.vertices[index] + offset.x) * scale.x, (data.vertices[index + 1] + offset.y) * scale.y));
+      part.push(
+        new b2Vec2(
+          (data.vertices[index] + offset.x) * scale.x,
+          (data.vertices[index + 1] + offset.y) * scale.y
+        )
+      );
     }
     parts.push(part);
   }
@@ -15928,6 +15936,7 @@ function CreatePolygonFromEarcut(data) {
       b2CreatePolygonShape(body.bodyId, shapeDef, nGon);
     }
   });
+  return body;
 }
 function CreatePolygonFromVertices(data) {
   if (data.vertices.length < 3) {
@@ -15956,7 +15965,12 @@ function CreatePolygonFromVertices(data) {
     const indices = data.indices[i];
     for (let p4 = 0, pl = indices.length; p4 < pl; p4++) {
       const index = indices[p4] * 2;
-      part.push(new b2Vec2((data.vertices[index] + offset.x) * scale.x, (data.vertices[index + 1] + offset.y) * scale.y));
+      part.push(
+        new b2Vec2(
+          (data.vertices[index] + offset.x) * scale.x,
+          (data.vertices[index + 1] + offset.y) * scale.y
+        )
+      );
     }
     parts.push(part);
   }
@@ -15983,20 +15997,15 @@ function CreatePolygonFromVertices(data) {
 }
 function CreatePhysicsEditorShape(data) {
   const key = data.key;
-  const url = data.url;
-  async function loadXMLFromFile(url2) {
-    try {
-      const response = await fetch(url2);
-      const xmlText = await response.text();
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-      return xmlDoc;
-    } catch (error) {
-      throw error;
-    }
+  const xmlData = data.xmlData;
+  if (!xmlData || typeof xmlData !== "object" || xmlData.nodeType !== 9) {
+    return null;
   }
   function extractPolygons(key2, xmlDoc) {
     const polygonElements = xmlDoc.querySelectorAll(`body[name=${key2}] fixtures polygon`);
+    if (!polygonElements.length) {
+      return null;
+    }
     const uniqueVertices = [];
     const polygonIndices = [];
     function getVertexIndex(x, y) {
@@ -16012,6 +16021,9 @@ function CreatePhysicsEditorShape(data) {
     }
     Array.from(polygonElements).forEach((polygon) => {
       const numbers = polygon.textContent.trim().split(/[,\s]+/).map(Number);
+      if (numbers.length < 6) {
+        return;
+      }
       const polygonIndexList = [];
       for (let i = 0; i < numbers.length; i += 2) {
         const vertexIndex = getVertexIndex(numbers[i], numbers[i + 1]);
@@ -16019,29 +16031,22 @@ function CreatePhysicsEditorShape(data) {
       }
       polygonIndices.push(polygonIndexList);
     });
+    if (!polygonIndices.length) {
+      return null;
+    }
     return {
       vertices: uniqueVertices,
-      // a flat array of x,y coordinates
       indices: polygonIndices
-      // an array of index arrays, one per polygon
     };
   }
-  function createPolygons(polygons) {
-    return CreatePolygonFromVertices({
-      ...data,
-      indices: polygons.indices,
-      vertices: polygons.vertices
-    });
+  const polygons = extractPolygons(key, xmlData);
+  if (!polygons) {
+    return null;
   }
-  return new Promise(async (resolve, reject) => {
-    try {
-      const xmlDoc = await loadXMLFromFile(url);
-      const polygons = extractPolygons(key, xmlDoc);
-      const result = createPolygons(polygons);
-      resolve(result);
-    } catch (error) {
-      reject(error);
-    }
+  return CreatePolygonFromVertices({
+    ...data,
+    indices: polygons.indices,
+    vertices: polygons.vertices
   });
 }
 function CreateRevoluteJoint(data) {

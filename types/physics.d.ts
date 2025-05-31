@@ -347,8 +347,8 @@ export function CreatePolygon(data: PolygonConfig): {
  * @property {any} [color] - Custom color for the polygon.
  * @property {number[]} indices - List of indices to the vertices for the polygon.
  * @property {number[]} vertices - List of vertices for the polygon in number pairs [x0,y0, x1,y1, ... xN,yN].
- * @property {b2Vec2} vertexOffset - Offset to recenter the vertices if they are not zero based.
- * @property {b2Vec2} vertexScale - Scale for the vertices, defaults to 1, 1.
+ * @property {b2Vec2} [vertexOffset] - Offset to recenter the vertices if they are not zero based.
+ * @property {b2Vec2} [vertexScale] - Scale for the vertices, defaults to 1, 1.
  * @property {string} [url] - URL location of the XML data file, if we're using one.
  * @property {string} [key] - Name 'key' to find the correct data in the XML.
  */
@@ -375,17 +375,37 @@ export function CreatePolygonFromVertices(data: PolygonVertexConfig): {
     object: b2Polygon;
 };
 /**
+ * @typedef {Object} PhysicsEditorConfig
+ * @property {b2WorldId} worldId - ID for the world in which to create the polygon.
+ * @property {string} key - Name 'key' to find the correct data in the XML.
+ * @property {XMLDocument} xmlData - Preloaded XML data from PhysicsEditor.
+ * @property {b2BodyDef} [bodyDef] - Body definition for the polygon.
+ * @property {number} [type] - Type of the body (static, dynamic, kinematic).
+ * @property {b2Vec2} [position] - Position of the polygon's center.
+ * @property {b2BodyId} [bodyId] - Existing body ID if adding as a fixture.
+ * @property {b2ShapeDef} [shapeDef] - Shape definition for the polygon.
+ * @property {number} [groupIndex] - Collision group index for the polygon.
+ * @property {number} [density] - Density of the polygon.
+ * @property {number} [friction] - Friction of the polygon.
+ * @property {number} [restitution=0.1] - Restitution of the polygon.
+ * @property {any} [color] - Custom color for the polygon.
+ * @property {number[]} [indices] - List of indices to the vertices for the polygon.
+ * @property {number[]} [vertices] - List of vertices for the polygon in number pairs [x0,y0, x1,y1, ... xN,yN].
+ * @property {b2Vec2} [vertexOffset] - Offset to recenter the vertices if they are not zero based.
+ * @property {b2Vec2} [vertexScale] - Scale for the vertices, defaults to 1, 1.
+ */
+/**
  * Creates a polygon from PhysicsEditor XML data and attaches it to a body.
  * It is recommended to prepare data with this _before_ the game loop starts; It is async and quite slow.
- * @param {PolygonVertexConfig} data - Configuration for the polygon.
- * @returns {Promise<{bodyId: b2BodyId, shapeId: b2ShapeId, object: b2Polygon}>} The created polygon's body ID, shape ID, and object.
+ * @param {PhysicsEditorConfig} data - Configuration for the polygon.
+ * @returns {{bodyId: b2BodyId, shapeId: b2ShapeId, object: b2Polygon}} The created polygon's body ID, shape ID, and object.
  * @memberof Physics
  */
-export function CreatePhysicsEditorShape(data: PolygonVertexConfig): Promise<{
+export function CreatePhysicsEditorShape(data: PhysicsEditorConfig): {
     bodyId: b2BodyId;
     shapeId: b2ShapeId;
     object: b2Polygon;
-}>;
+};
 /**
  * @typedef {Object} RevoluteJointConfig
  * @property {b2WorldId} worldId - ID for the world in which the bodies and joint exist.
@@ -1045,11 +1065,11 @@ export type PolygonVertexConfig = {
     /**
      * - Offset to recenter the vertices if they are not zero based.
      */
-    vertexOffset: b2Vec2;
+    vertexOffset?: b2Vec2;
     /**
      * - Scale for the vertices, defaults to 1, 1.
      */
-    vertexScale: b2Vec2;
+    vertexScale?: b2Vec2;
     /**
      * - URL location of the XML data file, if we're using one.
      */
@@ -1058,6 +1078,76 @@ export type PolygonVertexConfig = {
      * - Name 'key' to find the correct data in the XML.
      */
     key?: string;
+};
+export type PhysicsEditorConfig = {
+    /**
+     * - ID for the world in which to create the polygon.
+     */
+    worldId: b2WorldId;
+    /**
+     * - Name 'key' to find the correct data in the XML.
+     */
+    key: string;
+    /**
+     * - Preloaded XML data from PhysicsEditor.
+     */
+    xmlData: XMLDocument;
+    /**
+     * - Body definition for the polygon.
+     */
+    bodyDef?: b2BodyDef;
+    /**
+     * - Type of the body (static, dynamic, kinematic).
+     */
+    type?: number;
+    /**
+     * - Position of the polygon's center.
+     */
+    position?: b2Vec2;
+    /**
+     * - Existing body ID if adding as a fixture.
+     */
+    bodyId?: b2BodyId;
+    /**
+     * - Shape definition for the polygon.
+     */
+    shapeDef?: b2ShapeDef;
+    /**
+     * - Collision group index for the polygon.
+     */
+    groupIndex?: number;
+    /**
+     * - Density of the polygon.
+     */
+    density?: number;
+    /**
+     * - Friction of the polygon.
+     */
+    friction?: number;
+    /**
+     * - Restitution of the polygon.
+     */
+    restitution?: number;
+    /**
+     * - Custom color for the polygon.
+     */
+    color?: any;
+    /**
+     * - List of indices to the vertices for the polygon.
+     */
+    indices?: number[];
+    /**
+     * - List of vertices for the polygon in number pairs [x0,y0, x1,y1, ... xN,yN].
+     */
+    vertices?: number[];
+    /**
+     * - Offset to recenter the vertices if they are not zero based.
+     */
+    vertexOffset?: b2Vec2;
+    /**
+     * - Scale for the vertices, defaults to 1, 1.
+     */
+    vertexScale?: b2Vec2;
 };
 export type RevoluteJointConfig = {
     /**
